@@ -39,7 +39,8 @@ import { useCreateItem, useBulkCreateItems, BulkUploadResponse } from '@/lib/hoo
 import { useClothingTypes, useClothingColors } from '@/lib/hooks/use-translated-constants';
 import { ACCEPTED_IMAGE_TYPES } from '@/lib/image-types';
 import { useTranslations } from 'next-intl';
-import { useAiUiEnabled } from '@/lib/hooks/use-features';
+import { CategorySelect } from '@/components/personal/category-select';
+import { useFeatures, useAiUiEnabled } from '@/lib/hooks/use-features';
 
 interface AddItemDialogProps {
   initialTab?: "single" | "bulk";
@@ -63,6 +64,8 @@ export function AddItemDialog({ open, onOpenChange, initialTab = "single" }: Add
   // Single upload state
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const { data: features } = useFeatures();
+  const [category, setCategory] = useState('');
   const [type, setType] = useState('');
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -138,7 +141,9 @@ export function AddItemDialog({ open, onOpenChange, initialTab = "single" }: Add
     const formData = new FormData();
     formData.append('image', file);
     // Type is optional - AI will detect if not provided
-    if (type) formData.append('type', type);
+    if (features?.personal_mode) {
+      if (category) formData.append('category_id', category);
+    } else if (type) formData.append('type', type);
     if (name) formData.append('name', name);
     if (brand) formData.append('brand', brand);
     if (primaryColor) formData.append('primary_color', primaryColor);
@@ -206,6 +211,7 @@ export function AddItemDialog({ open, onOpenChange, initialTab = "single" }: Add
     setFile(null);
     setPreview(null);
     setType('');
+    setCategory('');
     setName('');
     setBrand('');
     setPrimaryColor('');
@@ -313,18 +319,22 @@ export function AddItemDialog({ open, onOpenChange, initialTab = "single" }: Add
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="type">{aiUiEnabled ? t('typeLabel') : tDetail('type')}</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={aiUiEnabled ? t('letAiDetect') : t('selectPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clothingTypes.map((ct) => (
-                        <SelectItem key={ct.value} value={ct.value}>
-                          {ct.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {features?.personal_mode ? (
+                    <CategorySelect value={category} onChange={setCategory} />
+                  ) : (
+                    <Select value={type} onValueChange={setType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={aiUiEnabled ? t('letAiDetect') : t('selectPlaceholder')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clothingTypes.map((ct) => (
+                          <SelectItem key={ct.value} value={ct.value}>
+                            {ct.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 <div className="space-y-2">

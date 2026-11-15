@@ -30,6 +30,9 @@ vi.mock('@/lib/hooks/use-items', () => ({
   useCreateItem: () => ({ mutateAsync: mocks.create }),
   useReplaceItemImage: () => ({ mutateAsync: vi.fn() }),
 }));
+vi.mock('@/lib/hooks/use-categories', () => ({
+  useCategories: () => ({ data: [{ id: 'category-1', name: '短袖' }] }),
+}));
 vi.mock('@/lib/hooks/use-locations', () => ({
   useLocations: () => ({ data: [{ id: 'location-1', name: 'Bedroom' }] }),
 }));
@@ -66,7 +69,7 @@ describe('personal clothing forms', () => {
       target: { files: [new File(['photo'], 'shirt.jpg', { type: 'image/jpeg' })] },
     });
     fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('category'), {
-      target: { value: 't-shirt' },
+      target: { value: 'category-1' },
     });
     fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('condition'), {
       target: { value: 'excellent' },
@@ -82,7 +85,11 @@ describe('personal clothing forms', () => {
     expect(body.get('condition')).toBe('excellent');
     expect(body.get('storage_location_id')).toBe('location-1');
     expect(body.getAll('season')).toEqual(['spring', 'summer']);
-    expect(body.get('type')).toBe('t-shirt');
+    expect(body.get('category_id')).toBe('category-1');
+    expect(body.has('type')).toBe(false);
+    expect(body.has('subtype')).toBe(false);
+    expect(screen.queryByLabelText('subtype')).not.toBeInTheDocument();
+    expect(screen.queryByText('all-season')).not.toBeInTheDocument();
     expect(body.get('image')).toBeInstanceOf(File);
     expect(body.get('skip_ai')).toBe('true');
   });

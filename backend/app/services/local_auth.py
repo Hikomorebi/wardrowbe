@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User, UserIdentity, UserPreference
 from app.schemas.email import normalise_email
+from app.services.category_service import seed_categories
 from app.utils.rate_limit import check_rate_limit
 
 passwords = PasswordHash.recommended()
@@ -70,5 +71,6 @@ async def provision(db: AsyncSession, email: str, password: str, name: str) -> U
         db.add(user)
         await db.flush()
         db.add(UserPreference(user_id=user.id))
+        await seed_categories(db, user.id)
     await set_password(db, user, password)
     return user.id

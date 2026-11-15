@@ -219,6 +219,10 @@ export function useUpdateItem() {
     },
     onSettled: (_data, _error, variables) => {
       invalidateItemCaches(queryClient, variables.id);
+      if ('category_id' in variables.data) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.outfits.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.everyOutfit });
+      }
     },
   });
 }
@@ -441,6 +445,7 @@ export interface WearHistoryEntry {
       type: string;
       name?: string;
       thumbnail_url?: string;
+      category_name?: string | null;
     }>;
   };
 }

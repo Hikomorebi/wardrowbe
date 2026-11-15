@@ -133,7 +133,7 @@ export function ItemPicker({
                 {item.thumbnail_url || item.image_url ? (
                   <Image
                     src={(item.thumbnail_url || item.image_url)!}
-                    alt={item.name || typeLabel(item.type)}
+                    alt={item.name || item.category_name || typeLabel(item.type)}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 33vw, 20vw"
@@ -142,7 +142,7 @@ export function ItemPicker({
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-muted">
                     <span className="text-xs text-muted-foreground">
-                      {typeLabel(item.type)}
+                      {item.category_name || typeLabel(item.type)}
                     </span>
                   </div>
                 )}

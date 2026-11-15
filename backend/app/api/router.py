@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.api.categories import router as categories_router
 from app.api.families import router as families_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
@@ -28,6 +29,7 @@ api_router.include_router(local_auth_router)
 api_router.include_router(users_router)
 api_router.include_router(items_router)
 api_router.include_router(locations_router)
+api_router.include_router(categories_router)
 api_router.include_router(split_router)
 api_router.include_router(images_router)
 api_router.include_router(preferences_router)

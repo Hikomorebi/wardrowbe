@@ -88,7 +88,7 @@ function OutfitEditor({
           <p className="text-sm text-muted-foreground">{t('selectedItems', { count: ids.size })}</p>
           {seededItem.data && (
             <p className="text-sm">
-              {t('startingWith', { name: seededItem.data.name || typeLabel(seededItem.data.type) })}
+              {t('startingWith', { name: seededItem.data.name || seededItem.data.category_name || typeLabel(seededItem.data.type) })}
             </p>
           )}
           <ItemPicker
@@ -181,12 +181,12 @@ export function PersonalOutfits() {
                 <Link key={item.id} href={`/dashboard/personal/wardrobe?item=${item.id}`}>
                   <Image
                     src={item.thumbnail_url || item.image_url || ''}
-                    alt={item.name || typeLabel(item.type)}
+                    alt={item.name || item.category_name || typeLabel(item.type)}
                     width={200}
                     height={200}
                     className="aspect-square object-contain bg-muted rounded-md"
                   />
-                  <p className="text-xs truncate mt-1">{item.name || typeLabel(item.type)}</p>
+                  <p className="text-xs truncate mt-1">{item.name || item.category_name || typeLabel(item.type)}</p>
                 </Link>
               ))}
             </div>

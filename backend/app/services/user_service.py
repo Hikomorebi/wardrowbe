@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.auth import IDENTITY_TOKEN, TokenPayload
 from app.schemas.email import normalise_email
 from app.schemas.user import UserSyncRequest
+from app.services.category_service import seed_categories
 
 # Reserved by RFC 2606, so a detached address can never be delivered to or claimed by a sign-in.
 DETACHED_EMAIL_DOMAIN = "detached.invalid"
@@ -469,6 +470,7 @@ class UserService:
             self.db.add(user)
             await self.db.flush()
             identity_id = await self._insert_identity(user.id, provider, sync_data.external_id)
+            await seed_categories(self.db, user.id)
         await self.db.refresh(user)
         return _SignIn(user, identity_id, True)
 

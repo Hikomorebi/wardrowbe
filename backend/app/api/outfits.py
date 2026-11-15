@@ -100,6 +100,8 @@ class SuggestRequest(BaseModel):
 
 
 class OutfitItemResponse(BaseModel):
+    category_id: UUID | None = None
+    category_name: str | None = None
     id: UUID
     type: str
     subtype: str | None = None
@@ -353,6 +355,8 @@ def outfit_to_response(
         items.append(
             OutfitItemResponse(
                 id=item.id,
+                category_id=item.category_id,
+                category_name=item.category_name,
                 type=item.type,
                 subtype=item.subtype,
                 name=item.name,

@@ -83,6 +83,7 @@ import {
 import { ColorEyedropper } from '@/components/color-eyedropper';
 import { ACCEPTED_IMAGE_INPUT } from '@/lib/image-types';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
+import { CategorySelect } from '@/components/personal/category-select';
 import { ItemTagsEditor } from '@/components/item-tags-editor';
 import { ReplaceAnalysisDialog } from '@/components/replace-analysis-dialog';
 import {
@@ -196,6 +197,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   const replaceImage = useReplaceItemImage();
   const replaceImageInputRef = useRef<HTMLInputElement>(null);
   const { data: features } = useFeatures();
+  const [category, setCategory] = useState(item?.category_id ?? '');
   const aiUiEnabled = useAiUiEnabled();
   const logWear = useLogWear();
   const logWash = useLogWash();
@@ -208,6 +210,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
 
   useEffect(() => {
     if (item) {
+      setCategory(item.category_id ?? '');
       setEditForm(editFormFromItem(item));
       setTagDraft(draftFromTags(item.tags, primaryColorOfItem(item)));
       setEditBase(item);
@@ -224,10 +227,11 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     const before: EditForm = { ...editFormFromItem(base), subtype: base.subtype || '' };
     const data: ItemEdits = {};
     if (editForm.name !== before.name) data.name = editForm.name || undefined;
-    if (editForm.type !== before.type) data.type = editForm.type;
+    if (features?.personal_mode && category !== (base.category_id ?? '')) data.category_id = category || null;
+    if (!features?.personal_mode && editForm.type !== before.type) data.type = editForm.type;
     const subtype = editForm.subtype.trim();
     // null (not undefined) so clearing the field actually clears it server-side.
-    if (subtype !== before.subtype) data.subtype = subtype || null;
+    if (!features?.personal_mode && subtype !== before.subtype) data.subtype = subtype || null;
     if (editForm.brand !== before.brand) data.brand = editForm.brand || undefined;
     if (editForm.primary_color !== before.primary_color) {
       data.primary_color = editForm.primary_color || undefined;
@@ -393,7 +397,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 width before a flex-1 sibling does, a long name squeezed the
                 actions row and pushed edit and replace-image out of view. */}
             <DialogTitle className="text-xl min-w-0 truncate max-w-[45%] sm:max-w-none sm:flex-1">
-              {item.name || (typeInfo ? typeInfo.label : item.type)}
+              {item.name || (features?.personal_mode ? (item.category_name || '—') : (typeInfo ? typeInfo.label : item.type))}
             </DialogTitle>
             {/* The action row scrolls sideways once it stops fitting, because
                 the dialog clips its own overflow: without this the buttons
@@ -558,6 +562,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     // Re-read the item on entering edit mode: tagging can finish while the
                     // dialog is open (same id, so the effect above doesn't re-run).
                     if (!isEditing) {
+                      setCategory(item.category_id ?? '');
                       setEditForm(editFormFromItem(item));
                       setTagDraft(draftFromTags(item.tags, primaryColorOfItem(item)));
                       setEditBase(item);
@@ -602,7 +607,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       <Image
                         key={`${currentImage.id}-${imageKey}`}
                         src={currentImage.url}
-                        alt={item.name || typeLabel(item.type)}
+                        alt={item.name || item.category_name || typeLabel(item.type)}
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, 50vw"
@@ -732,40 +737,46 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         {t('unrecognizedType', { value: unrecognizedType })}
                       </p>
                     )}
-                    <Select
-                      value={editForm.type}
-                      onValueChange={(v) =>
-                        setEditForm({ ...editForm, type: v, subtype: subtypeAfterTypeChange(v, editForm.subtype) })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clothingTypes.map((ct) => (
-                          <SelectItem key={ct.value} value={ct.value}>
-                            {ct.label}
-                          </SelectItem>
+                    {features?.personal_mode ? (
+                      <CategorySelect value={category} onChange={setCategory} />
+                    ) : (
+                      <Select
+                        value={editForm.type}
+                        onValueChange={(v) =>
+                          setEditForm({ ...editForm, type: v, subtype: subtypeAfterTypeChange(v, editForm.subtype) })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clothingTypes.map((ct) => (
+                            <SelectItem key={ct.value} value={ct.value}>
+                              {ct.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  {!features?.personal_mode && (
+                    <div className="space-y-2">
+                      <Label htmlFor="item-subtype">{t('subtype')}</Label>
+                      <Input
+                        id="item-subtype"
+                        list="item-subtype-suggestions"
+                        maxLength={50}
+                        value={editForm.subtype}
+                        onChange={(e) => setEditForm({ ...editForm, subtype: e.target.value })}
+                        placeholder={t('placeholders.subtype')}
+                      />
+                      <datalist id="item-subtype-suggestions">
+                        {subtypeSuggestions.map((st) => (
+                          <option key={st} value={st}>{subtypeLabel(st)}</option>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="item-subtype">{t('subtype')}</Label>
-                    <Input
-                      id="item-subtype"
-                      list="item-subtype-suggestions"
-                      maxLength={50}
-                      value={editForm.subtype}
-                      onChange={(e) => setEditForm({ ...editForm, subtype: e.target.value })}
-                      placeholder={t('placeholders.subtype')}
-                    />
-                    <datalist id="item-subtype-suggestions">
-                      {subtypeSuggestions.map((st) => (
-                        <option key={st} value={st}>{subtypeLabel(st)}</option>
-                      ))}
-                    </datalist>
-                  </div>
+                      </datalist>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>{t('brand')}</Label>
                     <Input
@@ -828,6 +839,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     </p>
                   </div>
                   <ItemTagsEditor
+                    seasonOptions={features?.personal_mode ? ['spring', 'summer', 'fall', 'winter'] : undefined}
                     draft={tagDraft}
                     onChange={setTagDraft}
                     primaryColor={editForm.primary_color || undefined}
@@ -859,8 +871,8 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Shirt className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{typeInfo ? typeInfo.label : item.type}</span>
-                      {item.subtype && (
+                      <span className="font-medium">{features?.personal_mode ? (item.category_name || '—') : (typeInfo ? typeInfo.label : item.type)}</span>
+                      {!features?.personal_mode && item.subtype && (
                         <span className="text-muted-foreground">• {subtypeLabel(item.subtype)}</span>
                       )}
                     </div>
@@ -1054,12 +1066,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                                       <div
                                         key={oi.id}
                                         className="w-5 h-5 rounded-full bg-muted border-2 border-background overflow-hidden"
-                                        title={oi.name || typeLabel(oi.type)}
+                                        title={oi.name || oi.category_name || typeLabel(oi.type)}
                                       >
                                         {oi.thumbnail_url && (
                                           <Image
                                             src={oi.thumbnail_url}
-                                            alt={oi.name || typeLabel(oi.type)}
+                                            alt={oi.name || oi.category_name || typeLabel(oi.type)}
                                             width={20}
                                             height={20}
                                             className="object-cover w-full h-full"
@@ -1196,7 +1208,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           <AlertDialogHeader>
             <AlertDialogTitle>{t('actions.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('actions.deleteDescription', { name: item.name || typeLabel(item.type) })}
+              {t('actions.deleteDescription', { name: item.name || item.category_name || typeLabel(item.type) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -7,6 +7,7 @@ import type { OutfitFilters } from '@/lib/hooks/use-outfits';
 // so a single-item or single-outfit key must never be nested under ['items'] or ['outfits'].
 const ITEMS = ['items'] as const;
 const OUTFITS = ['outfits'] as const;
+const OUTFIT = ['outfit'] as const;
 const CALENDAR_OUTFITS = ['calendarOutfits'] as const;
 const PENDING_OUTFITS = ['pendingOutfits'] as const;
 const FAMILY_OUTFITS = ['familyOutfits'] as const;
@@ -18,6 +19,8 @@ const WEAR_STATS = ['wear-stats'] as const;
 const WEAR_HISTORY = ['wear-history'] as const;
 
 export const queryKeys = {
+  clothingCategories: ['clothingCategories'] as const,
+  everyOutfit: OUTFIT,
   authConfig: ['auth-config'] as const,
   authUser: ['auth-user'] as const,
   userProfile: ['user-profile'] as const,
@@ -55,7 +58,7 @@ export const queryKeys = {
     infinite: (filters: OutfitFilters, pageSize: number) =>
       [...OUTFITS, 'infinite', filters, pageSize] as const,
   },
-  outfit: (outfitId: string) => ['outfit', outfitId] as const,
+  outfit: (outfitId: string) => [...OUTFIT, outfitId] as const,
   calendarOutfits: {
     all: CALENDAR_OUTFITS,
     month: (year: number, month: number, filters: OutfitFilters) =>

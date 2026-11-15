@@ -76,5 +76,12 @@
     "good": "Bon",
     "fair": "Moyen",
     "poor": "Mauvais"
-  }
+  },
+  "manageCategories": "类别管理",
+  "categoryHelp": "新增、改名或删除类别，然后为衣物选择类别。正在使用的类别需先调整衣物归属。",
+  "categoryName": "类别名称",
+  "emptyCategories": "还没有类别，请先新增一个。",
+  "duplicateCategory": "已有同名类别，请换一个名称。",
+  "categoryInUse": "还有衣物使用该类别（包括已归档衣物），请先修改或清除这些衣物的类别。",
+  "deleteCategoryConfirm": "删除这个类别？"
 }

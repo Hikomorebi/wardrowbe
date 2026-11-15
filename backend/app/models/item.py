@@ -23,6 +23,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.category import ClothingCategory
     from app.models.outfit import Outfit
     from app.models.user import User
 
@@ -82,6 +83,10 @@ class ClothingItem(Base):
     # (migration b1c2d3e4f5a6) so a retried/duplicated upload of the same queued
     # record cannot create a second item. NULL for uploads outside that flow.
     upload_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    category_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("clothing_categories.id", ondelete="RESTRICT"), index=True
+    )
 
     # Classification
     type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -163,6 +168,12 @@ class ClothingItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    category: Mapped[Optional["ClothingCategory"]] = relationship(lazy="selectin")
+
+    @property
+    def category_name(self) -> str | None:
+        return self.category.name if self.category else None
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="clothing_items")

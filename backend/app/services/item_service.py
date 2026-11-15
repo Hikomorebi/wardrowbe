@@ -7,6 +7,8 @@ from sqlalchemy import and_, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import attributes, selectinload
 
+from app.config import get_settings
+from app.models.category import ClothingCategory
 from app.models.item import (
     TAG_COLUMNS,
     ClothingItem,
@@ -29,6 +31,12 @@ from app.utils.tag_validation import normalize_tag_edits
 
 # Values the AI fills in that can also be changed on the item itself rather than inside tags.
 _EDITABLE_ITEM_FIELDS = ("type", "subtype", "primary_color", "colors")
+
+
+def expand_seasons(values: list[str]) -> list[str]:
+    if "all-season" in values:
+        return ["spring", "summer", "fall", "winter"]
+    return list(dict.fromkeys(values))
 
 
 class TagVocabularyError(ValueError):
@@ -121,6 +129,8 @@ class ItemService:
 
         if filters.condition:
             clauses.append(ClothingItem.condition == filters.condition)
+        if filters.category_id:
+            clauses.append(ClothingItem.category_id == filters.category_id)
         if filters.storage_location_id:
             clauses.append(ClothingItem.storage_location_id == filters.storage_location_id)
         if filters.season:
@@ -257,6 +267,20 @@ class ItemService:
         )
         return result.scalar_one_or_none()
 
+    async def validate_category(
+        self, user_id: UUID, category_id: UUID | None
+    ) -> ClothingCategory | None:
+        if category_id is None:
+            return None
+        category = await self.db.scalar(
+            select(ClothingCategory)
+            .where(ClothingCategory.id == category_id, ClothingCategory.user_id == user_id)
+            .with_for_update(read=True)
+        )
+        if category is None:
+            raise HTTPException(404, "Category not found")
+        return category
+
     async def validate_location(self, user_id: UUID, location_id: UUID | None) -> None:
         if location_id is not None:
             owned = await self.db.scalar(
@@ -291,6 +315,7 @@ class ItemService:
         image_paths: dict[str, str],
         upload_key: str | None = None,
     ) -> ClothingItem:
+        category = await self.validate_category(user_id, item_data.category_id)
         await self.validate_location(user_id, item_data.storage_location_id)
         # Build tags dict
         tags = {}
@@ -299,9 +324,12 @@ class ItemService:
 
         if item_data.season:
             tags["season"] = item_data.season
+        if get_settings().personal_mode and "season" in tags:
+            tags["season"] = expand_seasons(tags["season"])
         # Create item
         item = ClothingItem(
             user_id=user_id,
+            category=category,
             condition=item_data.condition,
             storage_location_id=item_data.storage_location_id,
             season=tags.get("season", []),
@@ -309,7 +337,7 @@ class ItemService:
             thumbnail_path=image_paths.get("thumbnail_path"),
             medium_path=image_paths.get("medium_path"),
             image_hash=image_paths.get("image_hash"),
-            type=item_data.type,
+            type=(category.builtin_type or "unknown") if category else item_data.type,
             subtype=item_data.subtype,
             tags=tags,
             colors=item_data.colors or [],
@@ -340,10 +368,17 @@ class ItemService:
             incoming = incoming.model_dump(exclude_unset=True)
         # Maintained below; a client cannot set or clear it.
         incoming.pop("user_edited_keys", None)
+        if "category_id" in update_data:
+            category = await self.validate_category(item.user_id, update_data.pop("category_id"))
+            item.category = category
+            if category and category.builtin_type:
+                update_data["type"] = category.builtin_type
         if "storage_location_id" in update_data:
             await self.validate_location(item.user_id, update_data["storage_location_id"])
         if "season" in update_data:
             incoming["season"] = update_data.pop("season") or []
+        if get_settings().personal_mode and "season" in incoming:
+            incoming["season"] = expand_seasons(incoming["season"] or [])
 
         if incoming or any(field in update_data for field in _EDITABLE_ITEM_FIELDS):
             # Re-read under a row lock and compare against that, not against `item`, which was

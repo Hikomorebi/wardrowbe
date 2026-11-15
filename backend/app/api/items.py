@@ -152,6 +152,7 @@ async def list_items(
     sort_by: str | None = None,
     sort_order: str = "desc",
     condition: Condition | None = None,
+    category_id: UUID | None = None,
     storage_location_id: UUID | None = None,
     season: Season | None = None,
 ) -> ItemListResponse:
@@ -159,6 +160,7 @@ async def list_items(
 
     filters = ItemFilter(
         condition=condition,
+        category_id=category_id,
         storage_location_id=storage_location_id,
         season=season,
         type=type,
@@ -206,6 +208,7 @@ async def create_item(
     favorite: bool = Form(False),
     skip_ai: bool = Form(False),
     condition: Condition | None = Form(None),
+    category_id: UUID | None = Form(None),
     storage_location_id: UUID | None = Form(None),
     season: list[Season] = Form([]),
 ) -> ItemResponse:
@@ -213,6 +216,7 @@ async def create_item(
     image_service = ImageService()
     item_service = ItemService(db)
 
+    await item_service.validate_category(current_user.id, category_id)
     await item_service.validate_location(current_user.id, storage_location_id)
     content = await _read_image_or_413(image)
     content_type = image.content_type or "application/octet-stream"
@@ -257,6 +261,7 @@ async def create_item(
     # Create item - use "unknown" if type not provided (AI will detect)
     item_data = ItemCreate(
         condition=condition,
+        category_id=category_id,
         storage_location_id=storage_location_id,
         season=season,
         type=type or "unknown",
@@ -1465,6 +1470,7 @@ async def get_item_history(
                     {
                         "id": str(oi.item.id),
                         "type": oi.item.type,
+                        "category_name": oi.item.category_name,
                         "name": oi.item.name,
                         "thumbnail_url": sign_optional(oi.item.thumbnail_path),
                     }

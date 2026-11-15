@@ -15,10 +15,9 @@ import { AddItemDialog } from '@/components/add-item-dialog';
 import { ItemDetailDialog } from '@/components/item-detail-dialog';
 import { api, ApiError } from '@/lib/api';
 import { useItems, useItem, useCreateItem, useReplaceItemImage } from '@/lib/hooks/use-items';
+import { useCategories } from '@/lib/hooks/use-categories';
 import { useLocations } from '@/lib/hooks/use-locations';
 import {
-  useClothingTypes,
-  useTypeLabel,
   useSeasonLabel,
 } from '@/lib/hooks/use-translated-constants';
 import { queryKeys } from '@/lib/hooks/query-keys';
@@ -27,7 +26,7 @@ import { ACCEPTED_IMAGE_INPUT } from '@/lib/image-types';
 import type { Item } from '@/lib/types';
 
 export const CONDITIONS = ['excellent', 'good', 'fair', 'poor'] as const;
-export const SEASONS = ['spring', 'summer', 'fall', 'winter', 'all-season'] as const;
+export const SEASONS = ['spring', 'summer', 'fall', 'winter'] as const;
 export const selectClass = 'h-10 rounded-md border border-input bg-background px-3 text-sm w-full';
 
 function ItemEditor({
@@ -41,7 +40,7 @@ function ItemEditor({
 }) {
   const t = useTranslations('personal');
   const seasonLabel = useSeasonLabel();
-  const types = useClothingTypes();
+  const { data: categories = [] } = useCategories();
   const { data: locations = [] } = useLocations();
   const create = useCreateItem();
   const replace = useReplaceItemImage();
@@ -49,8 +48,7 @@ function ItemEditor({
   const [preview, setPreview] = useState(item?.image_url ?? '');
   const [file, setFile] = useState<File>();
   const [name, setName] = useState(item?.name ?? '');
-  const [type, setType] = useState(item?.type ?? '');
-  const [subtype, setSubtype] = useState(item?.subtype ?? '');
+  const [category, setCategory] = useState(item?.category_id ?? '');
   const [condition, setCondition] = useState(item?.condition ?? '');
   const [location, setLocation] = useState(item?.storage_location_id ?? '');
   const [seasons, setSeasons] = useState<string[]>(item?.season ?? item?.tags.season ?? []);
@@ -60,8 +58,7 @@ function ItemEditor({
       if (item) {
         await api.patch(`/items/${item.id}`, {
           name: name || null,
-          type,
-          subtype: subtype || null,
+          category_id: category || null,
           condition: condition || null,
           storage_location_id: location || null,
           season: seasons,
@@ -73,10 +70,9 @@ function ItemEditor({
         if (!file) throw new Error('image required');
         const body = new FormData();
         body.append('image', file);
-        body.append('type', type);
+        if (category) body.append('category_id', category);
         body.append('skip_ai', 'true');
         if (name) body.append('name', name);
-        if (subtype) body.append('subtype', subtype);
         if (condition) body.append('condition', condition);
         if (location) body.append('storage_location_id', location);
         if (notes) body.append('notes', notes);
@@ -158,30 +154,20 @@ function ItemEditor({
                   <select
                     id="personal-type"
                     className={selectClass}
-                    value={type}
-                    required
-                    onChange={(e) => {
-                      setType(e.target.value);
-                      setSubtype('');
-                    }}
+                    value={category}
+                    required={!item}
+                    onChange={(e) => setCategory(e.target.value)}
                   >
-                    <option value="">{t('choose')}</option>
-                    {item?.type === 'unknown' && <option value="unknown">{t('unset')}</option>}
-                    {types.map((v) => (
-                      <option key={v.value} value={v.value}>
-                        {v.label}
+                    <option value="">{item ? t('unset') : t('choose')}</option>
+                    {categories.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
                       </option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="personal-subtype">{t('subtype')}</Label>
-                  <Input
-                    id="personal-subtype"
-                    maxLength={50}
-                    value={subtype}
-                    onChange={(e) => setSubtype(e.target.value)}
-                  />
+                  <Link className="text-sm text-primary" href="/dashboard/personal/categories">
+                    {t('manageCategories')}
+                  </Link>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="personal-condition">{t('condition')}</Label>
@@ -260,9 +246,8 @@ function ItemEditor({
 
 export function PersonalWardrobe() {
   const t = useTranslations('personal');
-  const typeLabel = useTypeLabel();
   const seasonLabel = useSeasonLabel();
-  const types = useClothingTypes();
+  const { data: categories = [] } = useCategories();
   const { data: locations = [] } = useLocations();
   const params = useSearchParams();
   const router = useRouter();
@@ -290,7 +275,7 @@ export function PersonalWardrobe() {
   const { data, isLoading, isError, refetch } = useItems(
     {
       search: params.get('search') || undefined,
-      type: params.get('type') || undefined,
+      category_id: params.get('category') || undefined,
       condition: (params.get('condition') || undefined) as Item['condition'],
       storage_location_id: params.get('location') || undefined,
       season: params.get('season') || undefined,
@@ -337,13 +322,13 @@ export function PersonalWardrobe() {
         <select
           aria-label={t('category')}
           className={selectClass}
-          value={params.get('type') ?? ''}
-          onChange={(e) => setFilter('type', e.target.value)}
+          value={params.get('category') ?? ''}
+          onChange={(e) => setFilter('category', e.target.value)}
         >
           <option value="">{t('allCategories')}</option>
-          {types.map((v) => (
-            <option key={v.value} value={v.value}>
-              {v.label}
+          {categories.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
             </option>
           ))}
         </select>
@@ -424,17 +409,16 @@ export function PersonalWardrobe() {
             >
               <Image
                 src={item.medium_url || item.image_url || ''}
-                alt={item.name || typeLabel(item.type)}
+                alt={item.name || item.category_name || t('unset')}
                 width={500}
                 height={500}
                 className="aspect-square w-full object-contain bg-muted"
               />
             </button>
             <div className="p-3 space-y-2">
-              <h2 className="font-semibold truncate">{item.name || typeLabel(item.type)}</h2>
+              <h2 className="font-semibold truncate">{item.name || item.category_name || t('unset')}</h2>
               <p className="text-sm text-muted-foreground">
-                {typeLabel(item.type)}
-                {item.subtype ? ` · ${item.subtype}` : ''}
+                {item.category_name || t('unset')}
               </p>
               <p className="text-sm">
                 {t('condition')}: {item.condition ? t(`conditions.${item.condition}`) : t('unset')}

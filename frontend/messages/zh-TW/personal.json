@@ -76,5 +76,12 @@
   "passwordMismatch": "两次输入的新密码不一致。",
   "passwordChanged": "密码已修改，请重新登录。",
   "passwordChangeError": "修改失败，请检查当前密码后重试。",
-  "bulkImport": "批量上傳"
+  "bulkImport": "批量上傳",
+  "manageCategories": "類別管理",
+  "categoryHelp": "新增、改名或刪除類別，再為衣物選擇類別。使用中的類別需先調整衣物歸屬。",
+  "categoryName": "類別名稱",
+  "emptyCategories": "還沒有類別，請先新增一個。",
+  "duplicateCategory": "已有同名類別，請換一個名稱。",
+  "categoryInUse": "還有衣物使用此類別（包括已封存衣物），請先修改或清除這些衣物的類別。",
+  "deleteCategoryConfirm": "刪除此類別？"
 }

@@ -122,9 +122,10 @@ interface ItemTagsEditorProps {
   onChange: (draft: TagDraft) => void;
   // The item's primary colour as set in the edit form, which the extra colours must not repeat.
   primaryColor?: string;
+  seasonOptions?: readonly string[];
 }
 
-export function ItemTagsEditor({ draft, onChange, primaryColor }: ItemTagsEditorProps) {
+export function ItemTagsEditor({ draft, onChange, primaryColor, seasonOptions = SEASON_VALUES }: ItemTagsEditorProps) {
   const t = useTranslations('wardrobe.itemDetail.tagsEditor');
   const patternLabel = usePatternLabel();
   const materialLabel = useMaterialLabel();
@@ -201,7 +202,7 @@ export function ItemTagsEditor({ draft, onChange, primaryColor }: ItemTagsEditor
       />
       <ChipGroup
         label={t('season')}
-        values={SEASON_VALUES}
+        values={seasonOptions}
         selected={draft.season}
         labelFor={seasonLabel}
         onChange={(season) => onChange({ ...draft, season })}

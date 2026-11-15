@@ -40,6 +40,7 @@ USER_TAG_KEYS = frozenset({"size", "care_instructions", "source_url", "user_edit
 class ItemBase(BaseModel):
     condition: Condition | None = None
     storage_location_id: UUID | None = None
+    category_id: UUID | None = None
     type: str = Field(default="unknown", max_length=50)  # Default to unknown, AI will detect
     subtype: str | None = Field(None, max_length=50)
     name: str | None = Field(None, max_length=100)
@@ -60,6 +61,7 @@ class ItemCreate(ItemBase):
 class ItemUpdate(BaseModel):
     condition: Condition | None = None
     storage_location_id: UUID | None = None
+    category_id: UUID | None = None
     season: list[Season] | None = None
     type: str | None = Field(None, min_length=1, max_length=50)
     subtype: str | None = Field(None, max_length=50)
@@ -102,6 +104,7 @@ class ItemResponse(ItemBase):
                         setattr(data, dest, raw[src])
         return data
 
+    category_name: str | None = None
     id: UUID
     user_id: UUID
     image_path: str
@@ -222,6 +225,7 @@ class ItemListResponse(BaseModel):
 class ItemFilterFields(BaseModel):
     condition: Condition | None = None
     storage_location_id: UUID | None = None
+    category_id: UUID | None = None
     season: Season | None = None
     type: str | None = None
     subtype: str | None = None

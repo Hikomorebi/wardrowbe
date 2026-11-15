@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Shirt, LayoutGrid, MapPin, Settings } from 'lucide-react';
+import { Shirt, LayoutGrid, MapPin, Settings, Tags } from 'lucide-react';
 
 export function PersonalNavigation() {
   const t = useTranslations('personal');
@@ -11,6 +11,7 @@ export function PersonalNavigation() {
   const links = [
     { href: '/dashboard/personal/wardrobe', name: t('wardrobe'), icon: Shirt },
     { href: '/dashboard/personal/outfits', name: t('outfits'), icon: LayoutGrid },
+    { href: '/dashboard/personal/categories', name: t('manageCategories'), icon: Tags },
     { href: '/dashboard/personal/locations', name: t('manageLocations'), icon: MapPin },
     { href: '/dashboard/personal/settings', name: t('settings'), icon: Settings },
   ];

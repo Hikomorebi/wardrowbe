@@ -1,6 +1,6 @@
 # 个人衣橱部署与维护
 
-本部署面向 `https://cd.hikomorebi.site`，仅使用邮箱密码登录。衣物成色为优秀、良好、一般、较差；存放位置由本人维护；搭配手动保存。首页提供衣物、我的搭配、位置管理、设置。安卓客户端可复用 `/api/v1`，本次不包含 APK。
+本部署面向 `https://cd.hikomorebi.site`，仅使用邮箱密码登录。衣物成色为优秀、良好、一般、较差；存放位置由本人维护；搭配手动保存。首页提供衣物、我的搭配、类别管理、位置管理、设置。安卓客户端可复用 `/api/v1`，本次不包含 APK。
 
 ## 首次安装
 
@@ -90,10 +90,11 @@ bash deploy/restore.sh /absolute/path/to/backup --replace-current-data
 ## API约定（供后续安卓客户端使用）
 
 - `POST /api/v1/auth/login`：JSON提交 `email`、`password`，返回用户信息、`access_token`、`token_type` 和 `expires_in`；后续请求使用 `Authorization: Bearer <access_token>`。
-- `POST /api/v1/items`：multipart提交 `image`、`type` 及可选 `name`、`subtype`、`condition`、`storage_location_id`、`notes`；多个季节使用重复的 `season` 表单字段。
-- `PATCH /api/v1/items/{id}`：JSON更新字段，`condition: null`、`storage_location_id: null` 清空对应值，`season: []` 清空季节。
-- `condition` 取值为 `excellent`、`good`、`fair`、`poor`，与原有系统处理字段 `status` 分开。季节沿用 `spring`、`summer`、`fall`、`winter`、`all-season`。
-- `GET /api/v1/items` 支持 `condition`、`storage_location_id`、`season` 及原有类别、搜索和分页参数；选择某个季节时也包含四季适用的衣物。
+- `POST /api/v1/items`：multipart提交 `image`、`category_id` 及可选 `name`、`condition`、`storage_location_id`、`notes`；多个季节使用重复的 `season` 表单字段。
+- `PATCH /api/v1/items/{id}`：JSON更新字段，`category_id: null`、`condition: null`、`storage_location_id: null` 清空对应值，`season: []` 清空季节。
+- `condition` 取值为 `excellent`、`good`、`fair`、`poor`，与原有系统处理字段 `status` 分开。季节使用 `spring`、`summer`、`fall`、`winter` 四个值。个人模式下，旧客户端传入的 `all-season` 会展开为四个季节。
+- `GET /api/v1/items` 支持 `category_id`、`condition`、`storage_location_id`、`season` 及搜索和分页参数。衣物响应包含 `category_id` 和 `category_name`，搭配中的衣物也返回对应类别。
+- `/api/v1/categories` 提供列表、新增；`/api/v1/categories/{id}` 提供改名、删除，返回 `id`、`name`。引用中的类别删除返回409。
 - `/api/v1/locations` 提供列表、新增；`/api/v1/locations/{id}` 提供改名、删除，返回 `id`、`name`。引用中的位置删除返回409。
 - 手动搭配复用 `/api/v1/outfits/studio`、`/api/v1/outfits/{id}`；`GET /api/v1/outfits?item_id=...&source=manual&is_lookbook=true` 反查包含该衣物的手动搭配。引用中的衣物永久删除返回409，可先解除搭配引用或归档。
 - 账号只由服务器命令创建，登录有效期7天；401时客户端重新登录。本次未引入刷新令牌或安卓客户端工程。
@@ -101,8 +102,17 @@ bash deploy/restore.sh /absolute/path/to/backup --replace-current-data
 ## 本次上线验证（2026-11-15）
 
 - 正式域名HTTPS可访问；首个账号已初始化，初始凭据位于服务器用户私有文件 `/home/hkb/.local/share/wardrowbe/initial-login.json`，权限0600。登录后可在设置中修改密码。
-- 后端2427项测试全量通过；前端855项全量测试通过，随后新增的首页重定向回归及相关表单测试4项通过（累计856个不同用例）。Ruff、TypeScript、多语言及共享数据检查通过，ESLint无错误。
+- 后端2432项测试全量通过；前端全量测试及新增类别、修复缓存键后的定向回归通过（累计859个不同用例）。Ruff、TypeScript、多语言及共享数据检查通过，ESLint无错误。
 - 生产前端依赖审计结果为0个已知漏洞；前后端生产镜像构建成功。
 - 真实浏览器完成公网账号登录、照片上传、成色/位置/季节保存与编辑、筛选、手动搭配保存与反查、删除保护和清理操作；浏览器未记录脚本错误。首页不会再触发天气查询。
 - 带图片的备份已恢复到隔离PostgreSQL15数据库，全部3个关联图片文件验证通过；正式环境验收账号及数据已清理，保留真实账号。
 - 已完成干净的正式备份及隔离恢复验证。定时器 `wardrowbe-backup.timer` 已启用，每天北京时间03:30运行；当前快照保存在 `deploy/backups/`，镜像记录保存在 `deploy/releases/`，均不提交Git。
+
+
+## 类别与季节
+
+在网页的“类别管理”中新增、改名和删除类别。类别名称直接存入数据库，使用简体中文；初次迁移和创建新账号时会复制一份默认类别，后续不会覆盖自定义名称或补回已删除类别。初始类别见 `backend/app/data/default_categories.json`，修改该文件仅影响之后创建的账号，已有账号请通过网页管理。
+
+衣物可选择或清除类别，列表可按类别筛选；类别改名会同步显示在衣物和已保存的搭配中。正在被衣物使用的类别（含已归档衣物）不能删除，需要先调整或清除这些衣物的类别。界面不再提供子类别字段。
+
+适合季节仅提供春、夏、秋、冬，可多选。升级会将旧“四季”展开为四个季节全选，同时保留衣物的其他字段与搭配关联。

@@ -76,5 +76,12 @@
   "passwordMismatch": "The new passwords do not match.",
   "passwordChanged": "Password changed. Please sign in again.",
   "passwordChangeError": "Could not change the password. Check your current password and try again.",
-  "bulkImport": "Bulk upload"
+  "bulkImport": "Bulk upload",
+  "manageCategories": "Categories",
+  "categoryHelp": "Add, rename or delete categories, then assign them to clothing. Reassign clothing before deleting a category in use.",
+  "categoryName": "Category name",
+  "emptyCategories": "No categories yet. Add one to get started.",
+  "duplicateCategory": "A category with this name already exists.",
+  "categoryInUse": "This category is used by clothing, including archived items. Reassign or clear their category first.",
+  "deleteCategoryConfirm": "Delete this category?"
 }

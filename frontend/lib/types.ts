@@ -21,6 +21,8 @@ export interface ItemTags {
 }
 
 export interface Item {
+  category_id?: string | null;
+  category_name?: string | null;
   id: string;
   user_id: string;
   condition?: "excellent" | "good" | "fair" | "poor" | null;
@@ -126,6 +128,7 @@ export interface TaggingProgress {
 }
 
 export interface ItemFilter {
+  category_id?: string;
   condition?: Item["condition"];
   storage_location_id?: string;
   season?: string;
@@ -284,6 +287,8 @@ export interface FamilyRating {
 }
 
 export interface OutfitItem {
+  category_id?: string | null;
+  category_name?: string | null;
   id: string;
   type: string;
   subtype: string | null;
