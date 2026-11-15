@@ -5,10 +5,11 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from pwdlib import PasswordHash
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User, UserIdentity, UserPreference
+from app.models.mobile_session import MobileSession
 from app.schemas.email import normalise_email
 from app.services.category_service import seed_categories
 from app.utils.rate_limit import check_rate_limit
@@ -53,6 +54,11 @@ async def set_password(db: AsyncSession, user: User, password: str) -> None:
         identity.id = uuid4()
     else:
         db.add(UserIdentity(user_id=user.id, provider="local", subject=str(user.id)))
+    await db.execute(
+        update(MobileSession)
+        .where(MobileSession.user_id == user.id, MobileSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(UTC))
+    )
     await db.flush()
 
 

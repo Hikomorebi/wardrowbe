@@ -11,6 +11,7 @@ from sqlalchemy.orm import aliased, selectinload
 
 from app.config import get_settings
 from app.models.identity import UserIdentity
+from app.models.mobile_session import MobileSession
 from app.models.user import User
 from app.schemas.auth import IDENTITY_TOKEN, TokenPayload
 from app.schemas.email import normalise_email
@@ -88,6 +89,19 @@ class UserService:
             )
             if local_only:
                 query = query.where(UserIdentity.provider == "local")
+            if token.sid is not None:
+                if not settings.local_auth_enabled:
+                    return None
+                try:
+                    session_id = UUID(token.sid)
+                except ValueError:
+                    return None
+                query = query.join(MobileSession, MobileSession.user_id == User.id).where(
+                    MobileSession.id == session_id,
+                    MobileSession.identity_id == identity_id,
+                    MobileSession.revoked_at.is_(None),
+                    MobileSession.expires_at > datetime.now(UTC),
+                )
         elif token.sub_type is None:
             if local_only:
                 return None

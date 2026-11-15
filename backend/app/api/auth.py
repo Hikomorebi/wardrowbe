@@ -39,7 +39,11 @@ settings = get_settings()
 
 
 def create_access_token(
-    user_id: UUID, identity_id: UUID, expires_delta: timedelta | None = None
+    user_id: UUID,
+    identity_id: UUID,
+    expires_delta: timedelta | None = None,
+    *,
+    mobile_session_id: UUID | None = None,
 ) -> str:
     now = datetime.utcnow()
     if expires_delta:
@@ -53,6 +57,8 @@ def create_access_token(
         "exp": expire,
         "iat": now,
     }
+    if mobile_session_id is not None:
+        to_encode["sid"] = str(mobile_session_id)
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
 

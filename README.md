@@ -43,6 +43,8 @@
 
 Self-hosted wardrobe management with AI-powered outfit recommendations. Take photos of your clothes, let AI tag them, and get daily outfit suggestions based on weather and occasion.
 
+本分支提供个人自部署版本：[部署与维护](docs/personal-deployment.md)、[原生安卓 App 安装与构建](docs/android-app.md)。安卓客户端支持 Android 12 及以上，通过独立签名 APK 安装，使用本项目的邮箱密码账号；上方商店链接由上游项目维护。
+
 ## Features
 
 - **Photo-based wardrobe** - Upload photos, AI extracts clothing details automatically

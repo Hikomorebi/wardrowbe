@@ -9,6 +9,7 @@ from app.models.learning import (
     UserLearningProfile,
 )
 from app.models.location import StorageLocation
+from app.models.mobile_session import MobileRefreshToken, MobileSession
 from app.models.notification import Notification, NotificationSettings
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, UserFeedback
 from app.models.preference import UserPreference
@@ -18,6 +19,8 @@ from app.models.user import User
 __all__ = [
     "ClothingCategory",
     "StorageLocation",
+    "MobileSession",
+    "MobileRefreshToken",
     "Family",
     "FamilyInvite",
     "User",

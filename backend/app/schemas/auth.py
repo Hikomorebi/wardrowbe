@@ -14,6 +14,7 @@ class TokenPayload(BaseModel):
     iat: int | None = None
     iid: str | None = None
     sub_type: str | None = None
+    sid: str | None = None
     email: str | None = None
     name: str | None = None
 

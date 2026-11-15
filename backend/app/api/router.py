@@ -12,6 +12,7 @@ from app.api.items import router as items_router
 from app.api.learning import router as learning_router
 from app.api.local_auth import router as local_auth_router
 from app.api.locations import router as locations_router
+from app.api.mobile_auth import router as mobile_auth_router
 from app.api.notifications import router as notifications_router
 from app.api.outfits import router as outfits_router
 from app.api.pairings import router as pairings_router
@@ -26,6 +27,7 @@ api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router)
 api_router.include_router(local_auth_router)
+api_router.include_router(mobile_auth_router)
 api_router.include_router(users_router)
 api_router.include_router(items_router)
 api_router.include_router(locations_router)
