@@ -83,5 +83,9 @@
   "emptyCategories": "还没有类别，请先新增一个。",
   "duplicateCategory": "已有同名类别，请换一个名称。",
   "categoryInUse": "还有衣物使用该类别（包括已归档衣物），请先修改或清除这些衣物的类别。",
-  "deleteCategoryConfirm": "删除这个类别？"
+  "deleteCategoryConfirm": "删除这个类别？",
+  "currentItem": "現在の衣類",
+  "matchingHelp": "保存したコーディネートから、この衣類に合わせるアイテムを探します。",
+  "emptyMatchingOutfits": "組み合わせる衣類がありません。「マイコーディネート」で他の衣類と一緒に保存してください。",
+  "noCompanionItems": "このコーディネートには現在の衣類だけが含まれています。"
 }

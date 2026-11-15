@@ -13,13 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AddItemDialog } from '@/components/add-item-dialog';
 import { ItemDetailDialog } from '@/components/item-detail-dialog';
+import { ClothingCard } from '@/components/personal/clothing-card';
 import { api, ApiError } from '@/lib/api';
 import { useItems, useItem, useCreateItem, useReplaceItemImage } from '@/lib/hooks/use-items';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useLocations } from '@/lib/hooks/use-locations';
-import {
-  useSeasonLabel,
-} from '@/lib/hooks/use-translated-constants';
+import { useSeasonLabel } from '@/lib/hooks/use-translated-constants';
 import { queryKeys } from '@/lib/hooks/query-keys';
 import { invalidatePrimaryImageQueries } from '@/lib/hooks/cache-invalidation';
 import { ACCEPTED_IMAGE_INPUT } from '@/lib/image-types';
@@ -395,72 +394,24 @@ export function PersonalWardrobe() {
           {t('emptyWardrobe')}
         </p>
       )}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {data?.items.map((item) => (
-          <article key={item.id} className="border rounded-xl overflow-hidden bg-card">
-            <button
-              className="w-full"
-              onClick={() =>
-                router.replace(
-                  `/dashboard/personal/wardrobe?${new URLSearchParams({ ...Object.fromEntries(params), item: item.id })}`,
-                  { scroll: false },
-                )
-              }
-            >
-              <Image
-                src={item.medium_url || item.image_url || ''}
-                alt={item.name || item.category_name || t('unset')}
-                width={500}
-                height={500}
-                className="aspect-square w-full object-contain bg-muted"
-              />
-            </button>
-            <div className="p-3 space-y-2">
-              <h2 className="font-semibold truncate">{item.name || item.category_name || t('unset')}</h2>
-              <p className="text-sm text-muted-foreground">
-                {item.category_name || t('unset')}
-              </p>
-              <p className="text-sm">
-                {t('condition')}: {item.condition ? t(`conditions.${item.condition}`) : t('unset')}
-              </p>
-              <p className="text-sm truncate">
-                {t('location')}:{' '}
-                {locations.find((l) => l.id === item.storage_location_id)?.name || t('unset')}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {(item.season ?? []).map(seasonLabel).join(' · ') || t('unset')}
-              </p>
-              <div className="flex flex-wrap gap-2 text-sm">
-                <Link className="text-primary" href={`/dashboard/personal/outfits?item=${item.id}`}>
-                  {t('matchingOutfits')}
-                </Link>
-                <Link className="text-primary" href={`/dashboard/personal/outfits?seed=${item.id}`}>
-                  {t('createOutfit')}
-                </Link>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={action.isPending}
-                  onClick={() => action.mutate({ item })}
-                >
-                  {item.is_archived ? t('restore') : t('archive')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={action.isPending}
-                  onClick={() => {
-                    if (window.confirm(t('deleteItemConfirm')))
-                      action.mutate({ item, remove: true });
-                  }}
-                >
-                  {t('delete')}
-                </Button>
-              </div>
-            </div>
-          </article>
+          <ClothingCard
+            key={item.id}
+            item={item}
+            locationName={locations.find((location) => location.id === item.storage_location_id)?.name}
+            busy={action.isPending}
+            onOpen={() =>
+              router.replace(
+                `/dashboard/personal/wardrobe?${new URLSearchParams({ ...Object.fromEntries(params), item: item.id })}`,
+                { scroll: false },
+              )
+            }
+            onArchive={() => action.mutate({ item })}
+            onDelete={() => {
+              if (window.confirm(t('deleteItemConfirm'))) action.mutate({ item, remove: true });
+            }}
+          />
         ))}
       </div>
       <div className="flex justify-center gap-3 items-center">

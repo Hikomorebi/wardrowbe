@@ -83,5 +83,9 @@
   "emptyCategories": "No categories yet. Add one to get started.",
   "duplicateCategory": "A category with this name already exists.",
   "categoryInUse": "This category is used by clothing, including archived items. Reassign or clear their category first.",
-  "deleteCategoryConfirm": "Delete this category?"
+  "deleteCategoryConfirm": "Delete this category?",
+  "currentItem": "Current item",
+  "matchingHelp": "Find companion items in your saved outfits.",
+  "emptyMatchingOutfits": "No companion items yet. Save an outfit containing this item and other clothing in My outfits.",
+  "noCompanionItems": "This outfit contains only the current item. Add companion items in My outfits."
 }

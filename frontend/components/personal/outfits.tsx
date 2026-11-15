@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { ArrowLeft, ArrowUpRight, Layers3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -129,6 +130,7 @@ export function PersonalOutfits() {
   const [page, setPage] = useState(1);
   const itemId = params.get('item') || undefined;
   const seed = params.get('seed') || undefined;
+  const sourceItem = useItem(itemId ?? '');
   const { data, isLoading, isError, refetch } = useOutfits(
     { source: 'manual', is_lookbook: true, item_id: itemId },
     page,
@@ -149,15 +151,42 @@ export function PersonalOutfits() {
   };
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{itemId ? t('matchingOutfits') : t('outfits')}</h1>
-        <Button onClick={() => setAdding(true)}>{t('createOutfit')}</Button>
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">{itemId ? t('matchingOutfits') : t('outfits')}</h1>
+          {itemId && <p className="text-sm text-muted-foreground">{t('matchingHelp')}</p>}
+        </div>
+        {itemId ? (
+          <Button asChild variant="outline" className="shrink-0 gap-2 rounded-xl">
+            <Link href="/dashboard/personal/outfits">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              {t('outfits')}
+            </Link>
+          </Button>
+        ) : (
+          <Button className="gap-2 rounded-xl" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {t('createOutfit')}
+          </Button>
+        )}
       </div>
-      {itemId && (
-        <Link className="text-primary" href="/dashboard/personal/outfits">
-          {t('allOutfits')}
-        </Link>
+      {itemId && sourceItem.data && (
+        <div className="flex items-center gap-4 rounded-2xl border bg-muted/30 p-4">
+          <Image
+            src={sourceItem.data.thumbnail_url || sourceItem.data.image_url || ''}
+            alt={sourceItem.data.name || sourceItem.data.category_name || t('unset')}
+            width={80}
+            height={80}
+            className="h-20 w-20 shrink-0 rounded-xl border bg-background object-contain"
+          />
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">{t('currentItem')}</p>
+            <p className="truncate font-semibold">{sourceItem.data.name || sourceItem.data.category_name || t('unset')}</p>
+            <p className="text-sm text-muted-foreground">{sourceItem.data.category_name || t('unset')}</p>
+          </div>
+        </div>
       )}
+      {itemId && sourceItem.isError && <p role="alert">{t('loadError')}</p>}
       {isLoading && <p>{t('loading')}</p>}
       {isError && (
         <div role="alert">
@@ -169,44 +198,68 @@ export function PersonalOutfits() {
       )}
       {!isLoading && !isError && !data?.outfits.length && (
         <p className="border border-dashed rounded-lg p-12 text-center text-muted-foreground">
-          {t('emptyOutfits')}
+          {itemId ? t('emptyMatchingOutfits') : t('emptyOutfits')}
         </p>
       )}
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {data?.outfits.map((outfit) => (
-          <article key={outfit.id} className="rounded-xl border p-4 space-y-4 bg-card">
-            <h2 className="font-semibold">{outfit.name}</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {outfit.items.map((item) => (
-                <Link key={item.id} href={`/dashboard/personal/wardrobe?item=${item.id}`}>
-                  <Image
-                    src={item.thumbnail_url || item.image_url || ''}
-                    alt={item.name || item.category_name || typeLabel(item.type)}
-                    width={200}
-                    height={200}
-                    className="aspect-square object-contain bg-muted rounded-md"
-                  />
-                  <p className="text-xs truncate mt-1">{item.name || item.category_name || typeLabel(item.type)}</p>
-                </Link>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setEditing(outfit)}>
-                {t('editOutfit')}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={remove.isPending}
-                onClick={() => {
-                  if (window.confirm(t('deleteOutfitConfirm'))) remove.mutate(outfit.id);
-                }}
-              >
-                {t('delete')}
-              </Button>
-            </div>
-          </article>
-        ))}
+        {data?.outfits.map((outfit) => {
+          const shownItems = itemId ? outfit.items.filter((item) => item.id !== itemId) : outfit.items;
+          const itemColumns = itemId
+            ? (shownItems.length === 1 ? 'grid-cols-1' : 'grid-cols-2')
+            : 'grid-cols-2 sm:grid-cols-3';
+          return (
+            <article key={outfit.id} className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm">
+              <h2 className="flex items-center gap-2 font-semibold">
+                <Layers3 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                {outfit.name}
+              </h2>
+              <div className={`grid gap-3 ${itemColumns}`}>
+                {shownItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/dashboard/personal/wardrobe?item=${item.id}`}
+                    aria-label={item.name || item.category_name || typeLabel(item.type)}
+                    className="group min-w-0 rounded-xl border bg-muted/20 p-2 transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <Image
+                      src={item.thumbnail_url || item.image_url || ''}
+                      alt={item.name || item.category_name || typeLabel(item.type)}
+                      width={200}
+                      height={200}
+                      className="aspect-square w-full rounded-lg bg-background object-contain"
+                    />
+                    <div className="mt-2 flex items-center gap-1">
+                      <p className="min-w-0 flex-1 truncate text-xs font-medium">{item.name || item.category_name || typeLabel(item.type)}</p>
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
+                    </div>
+                    {item.category_name && <p className="mt-0.5 truncate text-xs text-muted-foreground">{item.category_name}</p>}
+                  </Link>
+                ))}
+              </div>
+              {itemId && shownItems.length === 0 && (
+                <p className="rounded-xl bg-muted/40 p-3 text-sm text-muted-foreground">{t('noCompanionItems')}</p>
+              )}
+              {!itemId && (
+                <div className="flex gap-2 border-t pt-3">
+                  <Button size="sm" variant="outline" className="rounded-lg" onClick={() => setEditing(outfit)}>
+                    {t('editOutfit')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg text-destructive hover:text-destructive"
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      if (window.confirm(t('deleteOutfitConfirm'))) remove.mutate(outfit.id);
+                    }}
+                  >
+                    {t('delete')}
+                  </Button>
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
       <div className="flex justify-center gap-3 items-center">
         <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
