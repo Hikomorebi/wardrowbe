@@ -8,10 +8,18 @@
         X-Frame-Options SAMEORIGIN
         Referrer-Policy same-origin
     }
-    handle /api/v1/* {
-        reverse_proxy backend:8000
-    }
-    handle {
-        reverse_proxy frontend:3000
+    route {
+        @filing expression `{$SITE_CLOSED_FOR_FILING:false}`
+        handle @filing {
+            header Cache-Control "no-store"
+            header Content-Type "text/plain; charset=utf-8"
+            respond "备案办理中，网站暂未开放。" 503
+        }
+        handle /api/v1/* {
+            reverse_proxy backend:8000
+        }
+        handle {
+            reverse_proxy frontend:3000
+        }
     }
 }

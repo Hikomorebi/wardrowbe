@@ -77,13 +77,15 @@ services:
       network: host
       args: { HTTP_PROXY: "${BUILD_HTTP_PROXY:-}", HTTPS_PROXY: "${BUILD_HTTP_PROXY:-}" }
     restart: unless-stopped
+    ports: ["127.0.0.1:18080:3000"]
     environment:
-      NEXTAUTH_URL: https://${APP_DOMAIN:-cd.hikomorebi.site}
+      NEXTAUTH_URL: ${FRONTEND_AUTH_URL:-https://${APP_DOMAIN:-cd.hikomorebi.site}}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Run prepare.py}
       BACKEND_URL: http://backend:8000
       LOCAL_AUTH_ENABLED: "true"
       PERSONAL_MODE: "true"
       DEFAULT_LOCALE: zh-CN
+      ICP_RECORD_NUMBER: ${ICP_RECORD_NUMBER:-}
     depends_on:
       backend: { condition: service_healthy }
     healthcheck:
@@ -98,6 +100,7 @@ services:
     ports: ["80:80", "443:443"]
     environment:
       APP_DOMAIN: ${APP_DOMAIN:-cd.hikomorebi.site}
+      SITE_CLOSED_FOR_FILING: ${SITE_CLOSED_FOR_FILING:-false}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

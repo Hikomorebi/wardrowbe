@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { Providers } from './providers';
+import { FilingFooter } from '@/components/filing-footer';
 import { LOCALE_METADATA, type SupportedLocale } from '@/lib/i18n/locales';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +12,10 @@ export const dynamic = 'force-dynamic';
 const inter = Inter({ subsets: ['latin', 'latin-ext'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Wardrowbe',
-  description: 'AI-powered wardrobe management and outfit recommendations',
+  title: process.env.PERSONAL_MODE === 'true' ? '我的衣橱' : 'Wardrowbe',
+  description: process.env.PERSONAL_MODE === 'true'
+    ? '个人衣物、存放位置与穿搭记录'
+    : 'AI-powered wardrobe management and outfit recommendations',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -47,6 +50,7 @@ export default async function RootLayout({
       <body className={`${inter.variable} font-sans`}>
         <NextIntlClientProvider messages={messages} locale={locale}>
           <Providers>{children}</Providers>
+          <FilingFooter recordNumber={process.env.ICP_RECORD_NUMBER} />
         </NextIntlClientProvider>
       </body>
     </html>
