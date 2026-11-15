@@ -65,3 +65,8 @@ testing/
 .playwright-mcp
 *.review.yml
 *-test.yml
+
+# Private server deployment state
+/deploy/.env.server
+/deploy/backups/
+/deploy/releases/

@@ -1,0 +1,17 @@
+{$APP_DOMAIN:cd.hikomorebi.site} {
+    encode zstd gzip
+    request_body {
+        max_size 55MB
+    }
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy same-origin
+    }
+    handle /api/v1/* {
+        reverse_proxy backend:8000
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

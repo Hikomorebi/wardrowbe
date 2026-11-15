@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User, UserIdentity
-from tests.migration_helpers import migration_downgrade
+from tests.migration_helpers import insert_historical_rows, migration_downgrade
 
 PREVIOUS = "6c1e8f2a9d47"
 
@@ -54,7 +54,7 @@ async def test_backfills_every_user_as_a_legacy_identity(db_session: AsyncSessio
     run = uuid4().hex
     users = [_user(f"backfill-{run}-{n}") for n in range(3)]
     async with migration_downgrade(db_session, PREVIOUS):
-        db_session.add_all(users)
+        await insert_historical_rows(db_session, *users)
         await db_session.commit()
 
     ids = [user.id for user in users]

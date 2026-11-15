@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, false, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, false, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,7 @@ class User(Base):
     # tokens minted before that table existed are checked against it, so it is never written
     # and new users get NULL; it is dropped in the next release.
     external_id: Mapped[str | None] = mapped_column(String(255), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(Text)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     # Whether the identity source vouched for the current email; only such rows may gain an
     # identity by email, so that a squatted, unverified email cannot be taken over.

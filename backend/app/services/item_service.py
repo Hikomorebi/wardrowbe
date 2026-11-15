@@ -2,6 +2,7 @@ from collections import Counter
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
+from fastapi import HTTPException
 from sqlalchemy import and_, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import attributes, selectinload
@@ -14,6 +15,8 @@ from app.models.item import (
     TaggingStatus,
     WashHistory,
 )
+from app.models.location import StorageLocation
+from app.models.outfit import Outfit, OutfitItem, OutfitSource
 from app.schemas.item import (
     DEFAULT_WASH_INTERVALS,
     USER_TAG_KEYS,
@@ -116,6 +119,12 @@ class ItemService:
             ClothingItem.is_archived == filters.is_archived,
         ]
 
+        if filters.condition:
+            clauses.append(ClothingItem.condition == filters.condition)
+        if filters.storage_location_id:
+            clauses.append(ClothingItem.storage_location_id == filters.storage_location_id)
+        if filters.season:
+            clauses.append(ClothingItem.season.overlap([filters.season, "all-season"]))
         if filters.type:
             clauses.append(ClothingItem.type == filters.type)
         if filters.subtype:
@@ -248,6 +257,33 @@ class ItemService:
         )
         return result.scalar_one_or_none()
 
+    async def validate_location(self, user_id: UUID, location_id: UUID | None) -> None:
+        if location_id is not None:
+            owned = await self.db.scalar(
+                select(StorageLocation.id)
+                .where(StorageLocation.id == location_id, StorageLocation.user_id == user_id)
+                .with_for_update(read=True)
+            )
+            if owned is None:
+                raise HTTPException(404, "Storage location not found")
+
+    async def ensure_deletable(self, item: ClothingItem) -> None:
+        await self.db.execute(
+            select(ClothingItem.id).where(ClothingItem.id == item.id).with_for_update()
+        )
+        linked = await self.db.scalar(
+            select(OutfitItem.outfit_id)
+            .join(Outfit)
+            .where(
+                OutfitItem.item_id == item.id,
+                Outfit.source == OutfitSource.manual,
+                Outfit.scheduled_for.is_(None),
+            )
+            .limit(1)
+        )
+        if linked is not None:
+            raise HTTPException(409, "Remove this item from saved outfits first, or archive it")
+
     async def create(
         self,
         user_id: UUID,
@@ -255,14 +291,20 @@ class ItemService:
         image_paths: dict[str, str],
         upload_key: str | None = None,
     ) -> ClothingItem:
+        await self.validate_location(user_id, item_data.storage_location_id)
         # Build tags dict
         tags = {}
         if item_data.tags:
             tags = item_data.tags.model_dump(exclude_none=True)
 
+        if item_data.season:
+            tags["season"] = item_data.season
         # Create item
         item = ClothingItem(
             user_id=user_id,
+            condition=item_data.condition,
+            storage_location_id=item_data.storage_location_id,
+            season=tags.get("season", []),
             image_path=image_paths["image_path"],
             thumbnail_path=image_paths.get("thumbnail_path"),
             medium_path=image_paths.get("medium_path"),
@@ -298,6 +340,10 @@ class ItemService:
             incoming = incoming.model_dump(exclude_unset=True)
         # Maintained below; a client cannot set or clear it.
         incoming.pop("user_edited_keys", None)
+        if "storage_location_id" in update_data:
+            await self.validate_location(item.user_id, update_data["storage_location_id"])
+        if "season" in update_data:
+            incoming["season"] = update_data.pop("season") or []
 
         if incoming or any(field in update_data for field in _EDITABLE_ITEM_FIELDS):
             # Re-read under a row lock and compare against that, not against `item`, which was

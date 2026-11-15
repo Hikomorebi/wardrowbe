@@ -34,6 +34,7 @@ export interface OutfitListResponse {
 }
 
 export interface OutfitFilters {
+  item_id?: string;
   status?: OutfitStatus;
   occasion?: string;
   date_from?: string;
@@ -83,6 +84,7 @@ function outfitListParams(filters: OutfitFilters, page: number, pageSize: number
     page_size: String(pageSize),
   };
 
+  if (filters.item_id) params.item_id = filters.item_id;
   if (filters.status) params.status = filters.status;
   if (filters.occasion) params.occasion = filters.occasion;
   if (filters.date_from) params.date_from = filters.date_from;

@@ -1,0 +1,115 @@
+name: wardrowbe-personal
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://wardrobe:${POSTGRES_PASSWORD:?Run prepare.py}@postgres:5432/wardrobe
+  REDIS_URL: redis://redis:6379/0
+  SECRET_KEY: ${SECRET_KEY:?Run prepare.py}
+  STORAGE_PATH: /data/wardrobe
+  APP_URL: https://${APP_DOMAIN:-cd.hikomorebi.site}
+  CORS_ORIGINS: '["https://${APP_DOMAIN:-cd.hikomorebi.site}"]'
+  DEBUG: "false"
+  LOCAL_AUTH_ENABLED: "true"
+  PERSONAL_MODE: "true"
+  AI_INTERNAL_ENABLED: "false"
+  AI_UI_ENABLED: "false"
+  TRUSTED_PROXY_COUNT: "1"
+  MAX_UPLOAD_SIZE_MB: "50"
+
+x-backend: &backend
+  image: wardrowbe-personal-backend:${APP_VERSION:?Run prepare.py}
+  build:
+    context: ../backend
+    network: host
+    args: { HTTP_PROXY: "${BUILD_HTTP_PROXY:-}", HTTPS_PROXY: "${BUILD_HTTP_PROXY:-}" }
+  restart: unless-stopped
+  environment: *backend-env
+  volumes: [uploads:/data/wardrobe, rembg:/opt/rembg/models]
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  logging: *logging
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wardrobe
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run prepare.py}
+      POSTGRES_DB: wardrobe
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U wardrobe -d wardrobe"]
+      interval: 5s
+      retries: 20
+    logging: *logging
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, "yes"]
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      retries: 20
+    logging: *logging
+  backend:
+    <<: *backend
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8000/api/v1/health/ready]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+  worker:
+    <<: *backend
+    command: [arq, app.workers.worker.WorkerSettings]
+  image-worker:
+    <<: *backend
+    command: [arq, app.workers.image_worker.ImageWorkerSettings]
+  frontend:
+    image: wardrowbe-personal-frontend:${APP_VERSION:?Run prepare.py}
+    build:
+      context: ../frontend
+      network: host
+      args: { HTTP_PROXY: "${BUILD_HTTP_PROXY:-}", HTTPS_PROXY: "${BUILD_HTTP_PROXY:-}" }
+    restart: unless-stopped
+    environment:
+      NEXTAUTH_URL: https://${APP_DOMAIN:-cd.hikomorebi.site}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Run prepare.py}
+      BACKEND_URL: http://backend:8000
+      LOCAL_AUTH_ENABLED: "true"
+      PERSONAL_MODE: "true"
+      DEFAULT_LOCALE: zh-CN
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-cd.hikomorebi.site}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend: { condition: service_healthy }
+    logging: *logging
+
+volumes:
+  postgres:
+  redis:
+  uploads:
+  rembg:
+  caddy_data:
+  caddy_config:

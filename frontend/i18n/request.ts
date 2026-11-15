@@ -50,6 +50,7 @@ async function detectLocale(): Promise<SupportedLocale> {
     cookieLocale = undefined;
   }
   if (isValidLocale(cookieLocale)) return cookieLocale;
+  if (isValidLocale(process.env.DEFAULT_LOCALE)) return process.env.DEFAULT_LOCALE;
 
   // No explicit choice stored yet, so honour the browser's preference on first visit.
   let acceptLanguage: string | null = null;

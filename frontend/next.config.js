@@ -3,17 +3,12 @@ const createNextIntlPlugin = require('next-intl/plugin');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    instrumentationHook: true,
-    // Disable automatic static optimization for pages using client-side context
-    missingSuspenseWithCSRBailout: false,
-  },
   images: {
     unoptimized: true,
   },
   // Skip type checking and linting during build (already done in CI)
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: true,

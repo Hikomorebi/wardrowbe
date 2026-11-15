@@ -11,6 +11,9 @@ from app.schemas.outfit import Occasion
 from app.utils.garment_vocabulary import DEFAULT_WASH_INTERVALS
 from app.utils.signed_urls import sign_image_url, sign_optional
 
+Condition = Literal["excellent", "good", "fair", "poor"]
+Season = Literal["spring", "summer", "fall", "winter", "all-season"]
+
 
 class ItemTags(BaseModel):
     colors: ColorList = Field(default_factory=list)
@@ -35,6 +38,8 @@ USER_TAG_KEYS = frozenset({"size", "care_instructions", "source_url", "user_edit
 
 
 class ItemBase(BaseModel):
+    condition: Condition | None = None
+    storage_location_id: UUID | None = None
     type: str = Field(default="unknown", max_length=50)  # Default to unknown, AI will detect
     subtype: str | None = Field(None, max_length=50)
     name: str | None = Field(None, max_length=100)
@@ -46,12 +51,16 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
+    season: list[Season] = Field(default_factory=list)
     tags: ItemTags | None = None
     colors: ColorList | None = None
     primary_color: ColorName | None = None
 
 
 class ItemUpdate(BaseModel):
+    condition: Condition | None = None
+    storage_location_id: UUID | None = None
+    season: list[Season] | None = None
     type: str | None = Field(None, min_length=1, max_length=50)
     subtype: str | None = Field(None, max_length=50)
     name: str | None = Field(None, max_length=100)
@@ -211,6 +220,9 @@ class ItemListResponse(BaseModel):
 
 
 class ItemFilterFields(BaseModel):
+    condition: Condition | None = None
+    storage_location_id: UUID | None = None
+    season: Season | None = None
     type: str | None = None
     subtype: str | None = None
     colors: ColorList | None = None

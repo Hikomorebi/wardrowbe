@@ -23,6 +23,7 @@ export const LOCALE_METADATA: Record<SupportedLocale, { name: string; nativeName
 };
 
 export const NAMESPACES = [
+  'personal',
   'common',
   'nav',
   'auth',

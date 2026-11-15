@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Enum,
@@ -54,6 +55,16 @@ class TaggedBy(enum.StrEnum):
 
 class ClothingItem(Base):
     __tablename__ = "clothing_items"
+    __table_args__ = (
+        CheckConstraint(
+            "condition IN ('excellent', 'good', 'fair', 'poor')", name="ck_item_condition"
+        ),
+    )
+
+    condition: Mapped[str | None] = mapped_column(String(20))
+    storage_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="RESTRICT"), index=True
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(

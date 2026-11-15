@@ -150,7 +150,10 @@ class OutfitItem(Base):
         UUID(as_uuid=True), ForeignKey("outfits.id", ondelete="CASCADE"), primary_key=True
     )
     item_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("clothing_items.id", ondelete="CASCADE"), primary_key=True
+        UUID(as_uuid=True),
+        ForeignKey("clothing_items.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     layer_type: Mapped[str | None] = mapped_column(String(20))

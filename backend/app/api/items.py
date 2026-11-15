@@ -45,6 +45,7 @@ from app.schemas.item import (
     BulkSelectionRequest,
     BulkUploadResponse,
     BulkUploadResult,
+    Condition,
     ItemCreate,
     ItemFilter,
     ItemImageResponse,
@@ -55,6 +56,7 @@ from app.schemas.item import (
     LogWearRequest,
     RemoveBackgroundRequest,
     ReorderImagesRequest,
+    Season,
     TaggingProgressResponse,
     WashHistoryResponse,
 )
@@ -149,10 +151,16 @@ async def list_items(
     search: str | None = None,
     sort_by: str | None = None,
     sort_order: str = "desc",
+    condition: Condition | None = None,
+    storage_location_id: UUID | None = None,
+    season: Season | None = None,
 ) -> ItemListResponse:
     color_list = colors.split(",") if colors else None
 
     filters = ItemFilter(
+        condition=condition,
+        storage_location_id=storage_location_id,
+        season=season,
         type=type,
         subtype=subtype,
         colors=color_list,
@@ -197,11 +205,15 @@ async def create_item(
     primary_color: str | None = Form(None),
     favorite: bool = Form(False),
     skip_ai: bool = Form(False),
+    condition: Condition | None = Form(None),
+    storage_location_id: UUID | None = Form(None),
+    season: list[Season] = Form([]),
 ) -> ItemResponse:
     # Validate and process image
     image_service = ImageService()
     item_service = ItemService(db)
 
+    await item_service.validate_location(current_user.id, storage_location_id)
     content = await _read_image_or_413(image)
     content_type = image.content_type or "application/octet-stream"
 
@@ -244,6 +256,9 @@ async def create_item(
 
     # Create item - use "unknown" if type not provided (AI will detect)
     item_data = ItemCreate(
+        condition=condition,
+        storage_location_id=storage_location_id,
+        season=season,
         type=type or "unknown",
         subtype=subtype,
         name=name,
@@ -549,6 +564,7 @@ async def bulk_delete_items(
                 failed += 1
                 continue
 
+            await item_service.ensure_deletable(item)
             image_service.delete_images(
                 {
                     "image_path": item.image_path,
@@ -1317,6 +1333,7 @@ async def delete_item(
         )
 
     image_service = ImageService()
+    await item_service.ensure_deletable(item)
     image_service.delete_images(
         {
             "image_path": item.image_path,

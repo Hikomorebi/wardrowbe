@@ -85,6 +85,7 @@ async def get_auth_config() -> AuthConfigResponse:
             if oidc_enabled
             else None,
         ),
+        local_auth=settings.local_auth_enabled,
         dev_mode=settings.dev_mode,
         forward_auth=forward_auth,
         mobile_notice=FORWARD_AUTH_ONLY_MOBILE_NOTICE
@@ -226,6 +227,8 @@ async def _body_identity(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Request body is required",
         )
+    if settings.local_auth_enabled:
+        raise HTTPException(401, "Sign in with your email and password")
     if settings.dev_mode:
         if not sync_data.email:
             raise HTTPException(

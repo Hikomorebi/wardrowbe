@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 export default async function Home() {
+  if (process.env.PERSONAL_MODE === 'true') redirect('/dashboard');
   const t = await getTranslations('auth');
 
   return (

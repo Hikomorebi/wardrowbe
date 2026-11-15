@@ -218,6 +218,9 @@ rebuild is needed.
 
 ## Deployment
 
+For the personal wardrobe edition (condition, storage locations, manual outfits and password
+login), see [个人部署与维护](docs/personal-deployment.md).
+
 ### Docker Compose (Production)
 
 See [docker-compose.prod.yml](docker-compose.prod.yml) for production configuration. Like the default stack, it pulls pre-built images from GHCR rather than building on the host.

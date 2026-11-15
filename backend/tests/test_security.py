@@ -343,6 +343,7 @@ def oidc_claims():
     ):
         mock_settings.oidc_issuer_url = "https://auth.example.com"
         mock_settings.oidc_client_id = "test-client"
+        mock_settings.local_auth_enabled = False
         mock_settings.dev_mode = False
         mock_settings.oidc_configured = True
         mock_settings.oidc_mobile_client_id = None

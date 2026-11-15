@@ -33,6 +33,7 @@ class OutfitListFilters:
     is_replacement: bool | None = None
     has_source_item: bool | None = None
     worn: bool | None = None
+    item_id: UUID | None = None
     item_type: str | None = None
     family_member_view: bool = False
     search: str | None = None
@@ -145,6 +146,8 @@ class OutfitService:
             )
             clauses.append(worn if filters.worn else ~worn)
 
+        if filters.item_id:
+            clauses.append(Outfit.items.any(OutfitItem.item_id == filters.item_id))
         if filters.item_type:
             clauses.append(Outfit.source_item.has(ClothingItem.type == filters.item_type))
 

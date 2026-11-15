@@ -12,6 +12,7 @@ interface Features {
   max_upload_size_mb: number;
   max_bulk_upload_count?: number;
   ai_ui_enabled?: boolean;
+  personal_mode?: boolean;
 }
 
 // An upload waits on this request before its first chunk, so a server that never answers

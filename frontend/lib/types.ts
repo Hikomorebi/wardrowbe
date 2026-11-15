@@ -23,6 +23,9 @@ export interface ItemTags {
 export interface Item {
   id: string;
   user_id: string;
+  condition?: "excellent" | "good" | "fair" | "poor" | null;
+  storage_location_id?: string | null;
+  season?: string[];
   type: string;
   subtype?: string | null;
   name?: string;
@@ -123,6 +126,9 @@ export interface TaggingProgress {
 }
 
 export interface ItemFilter {
+  condition?: Item["condition"];
+  storage_location_id?: string;
+  season?: string;
   type?: string;
   subtype?: string;
   colors?: string[];

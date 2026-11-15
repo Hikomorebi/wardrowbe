@@ -203,6 +203,22 @@ export async function authorizeForwardAuth(headers: IncomingHeaders): Promise<Us
   };
 }
 
+const LocalProvider = CredentialsProvider({
+  id: "local", name: "Email and password",
+  credentials: { email: { type: "email" }, password: { type: "password" } },
+  async authorize(credentials, req) {
+    if (!credentials?.email || !credentials.password) return null;
+    const response = await fetch(`${backendUrl()}${API_BASE_PATH}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": headerValue(req.headers ?? {}, "x-forwarded-for") || "unknown" },
+      body: JSON.stringify(credentials), signal: AbortSignal.timeout(SYNC_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return { id: data.id, email: data.email, name: data.display_name, accessToken: data.access_token, backendUserId: data.id, isNewUser: false, onboardingCompleted: data.onboarding_completed };
+  },
+});
+
 const ForwardAuthProvider = CredentialsProvider({
   id: 'forward-auth',
   name: 'Forward Auth',
@@ -212,12 +228,13 @@ const ForwardAuthProvider = CredentialsProvider({
 
 function getProviders() {
   const providers: Provider[] = [ForwardAuthProvider];
+  if (process.env.LOCAL_AUTH_ENABLED === "true") providers.push(LocalProvider);
 
   if (process.env.OIDC_ISSUER_URL) {
     providers.push(OIDCProvider);
   }
 
-  if (process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development') {
+  if (process.env.LOCAL_AUTH_ENABLED !== 'true' && (process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development')) {
     providers.push(DevCredentialsProvider);
   }
   return providers;
@@ -253,11 +270,11 @@ export const authOptions: NextAuthOptions = {
 
       // authorize() already synced with the proxy headers; a second sync from here would carry no
       // secret and be rejected.
-      if (user && account?.provider === 'forward-auth') {
+      if (user && (account?.provider === 'forward-auth' || account?.provider === 'local')) {
         return {
           ...token,
           sub: user.id,
-          proxyUser: user.id,
+          ...(account.provider === 'forward-auth' ? { proxyUser: user.id } : {}),
           accessToken: user.accessToken,
           backendUserId: user.backendUserId,
           isNewUser: user.isNewUser,
@@ -335,6 +352,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
+    maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

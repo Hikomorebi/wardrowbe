@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from app.config import get_settings
 from app.models.identity import UserIdentity
 from app.models.user import User
 from app.schemas.auth import IDENTITY_TOKEN, TokenPayload
@@ -64,6 +65,12 @@ class UserService:
         return result.scalar_one_or_none()
 
     async def get_by_token(self, token: TokenPayload) -> User | None:
+        settings = get_settings()
+        local_only = (
+            settings.local_auth_enabled
+            and not settings.oidc_configured
+            and not settings.forward_auth_configured
+        )
         if token.sub_type == IDENTITY_TOKEN:
             try:
                 user_id, identity_id = UUID(token.sub), UUID(token.iid or "")
@@ -78,7 +85,11 @@ class UserService:
                 )
                 .where(User.id == user_id)
             )
+            if local_only:
+                query = query.where(UserIdentity.provider == "local")
         elif token.sub_type is None:
+            if local_only:
+                return None
             # Minted before identities existed, with the user's external_id as sub. Accepted
             # only while the frozen external_id still names the user and the user still holds
             # that subject as a legacy, oidc or dev identity, so an adoption that ends it, or

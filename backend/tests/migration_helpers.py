@@ -2,7 +2,9 @@ import os
 import subprocess
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
+from sqlalchemy import MetaData, Table, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -26,3 +28,18 @@ async def migration_downgrade(db_session: AsyncSession, revision: str) -> AsyncI
     finally:
         await db_session.rollback()
         alembic("upgrade", "head")
+
+
+async def insert_historical_rows(db_session: AsyncSession, *objects) -> None:
+    """Seed a historical schema using its actual columns, not the current ORM's new fields."""
+    connection = await db_session.connection()
+    for obj in objects:
+        table = await connection.run_sync(
+            lambda conn, name=obj.__tablename__: Table(name, MetaData(), autoload_with=conn)
+        )
+        values = {key: value for key, value in inspect(obj).dict.items() if key in table.c}
+        if obj.__tablename__ == "clothing_items":
+            values.setdefault("tags", {})
+        if "id" in table.c and "id" not in values:
+            values["id"] = uuid4()
+        await db_session.execute(table.insert().values(**values))

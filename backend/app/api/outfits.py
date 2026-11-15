@@ -203,6 +203,7 @@ class BulkOutfitFilters(BaseModel):
     is_replacement: bool | None = None
     has_source_item: bool | None = None
     worn: bool | None = None
+    item_id: UUID | None = None
     item_type: str | None = None
     search: str | None = None
     occasions: Annotated[list[str] | None, Field(max_length=MAX_SEARCH_OCCASIONS)] = None
@@ -613,6 +614,7 @@ async def list_outfits(
     is_replacement: bool | None = Query(None),
     has_source_item: bool | None = Query(None),
     worn: bool | None = Query(None, description="true for outfits with a wear date"),
+    item_id: UUID | None = Query(None),
     item_type: str | None = Query(None),
     source_type: str | None = Query(
         None, description="Legacy alias for item_type used by /pairings"
@@ -642,6 +644,7 @@ async def list_outfits(
         is_replacement=is_replacement,
         has_source_item=has_source_item,
         worn=worn,
+        item_id=item_id,
         item_type=item_type or source_type,
         family_member_view=family_member_id is not None,
         search=search,

@@ -42,6 +42,7 @@ import { useTranslations } from 'next-intl';
 import { useAiUiEnabled } from '@/lib/hooks/use-features';
 
 interface AddItemDialogProps {
+  initialTab?: "single" | "bulk";
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -52,7 +53,7 @@ interface FileWithPreview {
   id: string;
 }
 
-export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
+export function AddItemDialog({ open, onOpenChange, initialTab = "single" }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.addItem');
   const tc = useTranslations('common');
   const tDetail = useTranslations('wardrobe.itemDetail');
@@ -72,7 +73,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const [bulkFiles, setBulkFiles] = useState<FileWithPreview[]>([]);
   const [bulkResult, setBulkResult] = useState<BulkUploadResponse | null>(null);
   const [skipAi, setSkipAi] = useState(false);
-  const [activeTab, setActiveTab] = useState('single');
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Track blob URLs for cleanup on unmount
@@ -218,7 +219,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
     setBulkFiles([]);
     setBulkResult(null);
     setSkipAi(false);
-    setActiveTab('single');
+    setActiveTab(initialTab);
     setShowCloseConfirm(false);
 
     onOpenChange(false);

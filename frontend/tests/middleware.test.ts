@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { encode } from 'next-auth/jwt'
-import { getMiddlewareMatchers } from 'next/dist/build/analysis/get-page-static-info'
+import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { middleware, config } from '@/middleware'
 
 const SECRET = 'nextauth-test-secret'
@@ -213,15 +213,7 @@ describe('forward-auth user-switch middleware', () => {
 })
 
 describe('middleware matcher', () => {
-  const matchers = getMiddlewareMatchers(config.matcher, {} as never)
-  const matches = (path: string) => {
-    const url = new URL(path, 'http://wardrobe.example.com')
-    return matchers.some(
-      (m) =>
-        new RegExp(m.regexp).test(url.pathname) &&
-        (m.has ?? []).every((h) => h.type === 'query' && url.searchParams.get(h.key) === h.value)
-    )
-  }
+  const matches = (path: string) => unstable_doesMiddlewareMatch({ config, url: new URL(path, 'http://wardrobe.example.com').toString() })
 
   it.each([
     '/',

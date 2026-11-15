@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { API_BASE_PATH } from '@/lib/api';
+import { LocalLogin } from '@/components/personal/local-login';
 import { safeCallbackUrl } from '@/lib/callback-url';
 import {
   FORWARD_AUTH_ACCOUNT_CONFLICT,
@@ -238,12 +239,14 @@ function LoginContent() {
 
   const syncError = syncErrorParam || session?.syncError;
 
-  const [providerMode, setProviderMode] = useState<'loading' | 'oidc' | 'dev' | 'unconfigured'>('loading');
+  const [providerMode, setProviderMode] = useState<'loading' | 'local' | 'oidc' | 'dev' | 'unconfigured'>('loading');
   const authConfig = useAuthConfig();
 
   useEffect(() => {
     getProviders().then((providers) => {
-      if (providers?.['oidc']) {
+      if (providers?.['local']) {
+        setProviderMode('local');
+      } else if (providers?.['oidc']) {
         setProviderMode('oidc');
       } else if (providers?.['dev-credentials']) {
         setProviderMode('dev');
@@ -302,7 +305,8 @@ function LoginContent() {
           />
         )}
         {authMode === 'oidc' && <OIDCLoginButton getCallbackUrl={getCallbackUrl} />}
-        {authMode === 'dev' && <DevLogin getCallbackUrl={getCallbackUrl} />}
+        {authMode === 'local' && <LocalLogin getCallbackUrl={getCallbackUrl} />}
+      {authMode === 'dev' && <DevLogin getCallbackUrl={getCallbackUrl} />}
         {authMode === 'unconfigured' && (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm space-y-2">
             <p className="font-medium text-destructive">{t('unconfigured.title')}</p>

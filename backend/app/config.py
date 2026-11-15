@@ -71,6 +71,9 @@ class Settings(BaseSettings):
         parse_redis_url(value)
         return value
 
+    local_auth_enabled: bool = False
+    personal_mode: bool = False
+
     # Authentication - OIDC
     oidc_issuer_url: str | None = Field(default=None)
     oidc_client_id: str | None = Field(default=None)
@@ -215,7 +218,12 @@ class Settings(BaseSettings):
 
     @property
     def dev_mode(self) -> bool:
-        return self.debug and not self.oidc_configured and not self.forward_auth_configured
+        return (
+            self.debug
+            and not self.local_auth_enabled
+            and not self.oidc_configured
+            and not self.forward_auth_configured
+        )
 
     def validate_security(self) -> str | None:
         if self.secret_key == DEFAULT_SECRET_KEY and not self.dev_mode:
@@ -245,12 +253,19 @@ class Settings(BaseSettings):
                 "FORWARD_AUTH_SECRET must contain only visible ASCII characters and no spaces."
             )
 
-        if not (self.oidc_configured or self.forward_auth_configured or self.dev_mode):
+        if not (
+            self.local_auth_enabled
+            or self.oidc_configured
+            or self.forward_auth_configured
+            or self.dev_mode
+        ):
             return NO_AUTH_CONFIGURED_MESSAGE
 
         return None
 
     def get_auth_mode(self) -> str:
+        if self.local_auth_enabled:
+            return "local"
         if self.forward_auth_configured:
             return "forward-auth+oidc" if self.oidc_configured else "forward-auth"
         if self.oidc_configured:
