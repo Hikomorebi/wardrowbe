@@ -26,29 +26,38 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { data: features, isLoading: featuresLoading } = useFeatures();
   const personal = features?.personal_mode === true;
-  useEffect(() => {
-    if (personal && pathname === "/dashboard") router.replace("/dashboard/personal/wardrobe");
-  }, [personal, pathname, router]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const t = useTranslations('dashboard');
 
-  const { user, isAuthenticated, isLoading, error } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // If auth check completed and user is not authenticated, redirect to login
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    // Choose one destination: competing login/home redirects can abort both navigations.
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace('/login');
+    } else if (user?.onboarding_completed === false) {
+      router.replace('/onboarding');
+    } else if (!featuresLoading && personal && pathname === '/dashboard') {
+      router.replace('/dashboard/personal/wardrobe');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    user?.onboarding_completed,
+    featuresLoading,
+    personal,
+    pathname,
+    router,
+  ]);
 
-  // Check onboarding status from API user
-  useEffect(() => {
-    if (user && user.onboarding_completed === false) {
-      router.push('/onboarding');
-    }
-  }, [user, router]);
-
-  if (isLoading || featuresLoading || (personal && pathname === "/dashboard")) {
+  if (
+    isLoading ||
+    featuresLoading ||
+    !isAuthenticated ||
+    user?.onboarding_completed === false ||
+    (personal && pathname === '/dashboard')
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -57,10 +66,6 @@ export default function DashboardLayout({
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (

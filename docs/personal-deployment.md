@@ -1,6 +1,6 @@
 # 个人衣橱部署与维护
 
-正式域名为 `https://cd.hikomorebi.site`，仅使用邮箱密码登录。目前域名备案办理中，请按 [SSH 私有访问](private-access.md) 使用，公开域名入口保留维护模式。衣物成色为优秀、良好、一般、较差；存放位置由本人维护；搭配手动保存。首页提供衣物、我的搭配、类别管理、位置管理、设置。[原生安卓客户端](android-app.md) 位于 `android/`，与网页共用账号和数据，手机正式联网使用待备案通过后开启。
+正式域名为 `https://cd.hikomorebi.site`，仅使用邮箱密码登录。2026-11-19 已完成备案并启用正式 HTTPS 访问，网站备案号为 `蜀ICP备2026072570号-1`。电脑直接访问域名，[SSH 私有访问](private-access.md) 保留作维护备用。衣物成色为优秀、良好、一般、较差；存放位置由本人维护；搭配手动保存。首页提供衣物、我的搭配、类别管理、位置管理、设置。[原生安卓客户端](android-app.md) 位于 `android/`，登录页服务器地址使用同一 HTTPS 域名，与网页共用账号和数据。
 
 ## 首次安装
 
@@ -27,6 +27,8 @@ docker compose --env-file deploy/.env.server -f deploy/compose.server.yml exec b
 容器保留现有图片处理Worker，内部AI默认关闭。前后端从本仓库构建，镜像标签使用 `APP_VERSION`，构建按顺序执行。Node.js24和Python3.11由镜像提供，不依赖服务器的Python版本。
 
 ## 日常检查
+
+2026-11-19 首页入口修复：登录检查、首次引导与个人衣橱跳转按顺序选择一个目标，避免未登录时多个跳转互相中断而只剩页脚。已从正式 HTTPS 域名在 Chromium、Firefox 中验证：首页、`/dashboard`、个人衣橱地址未登录时进入登录页，已登录时进入衣橱。
 
 ```bash
 docker compose --env-file deploy/.env.server -f deploy/compose.server.yml ps
